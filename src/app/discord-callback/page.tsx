@@ -1,8 +1,7 @@
 'use client';
 import React, { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { db, functions } from "@/lib/firebase";
-import { collection, addDoc } from "firebase/firestore";
+import { functions } from "@/lib/firebase";
 import { httpsCallable } from "firebase/functions";
 
 const exchangeCodeForToken = httpsCallable(functions, 'exchangeDiscordCode');
@@ -34,18 +33,6 @@ function DiscordCallbackComponent() {
         // Save token/user info
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(user));
-
-        // Save user info to Firestore
-        try {
-          await addDoc(collection(db, "users"), {
-            discordId: user.id,
-            username: user.username,
-            loginAt: new Date().toISOString(),
-          });
-        } catch (e) {
-          console.error("Error writing user to Firestore:", e);
-          // Non-critical error, so we can continue
-        }
         
         // Signal success to the main window and close the popup
         if (window.opener) {
