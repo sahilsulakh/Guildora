@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,13 +18,21 @@ import {
 
 const PortalSelection = () => {
   const navigate = useNavigate();
-  // If portal selection is already done, redirect immediately
-  React.useEffect(() => {
-    if (localStorage.getItem("portalSelectionDone")) {
-      navigate("/", { replace: true });
+  const [selectedPortal, setSelectedPortal] = useState<"admin" | "member" | null>(null);
+
+  useEffect(() => {
+    // If user is not logged in, redirect to auth page
+    if (!localStorage.getItem("token")) {
+      navigate("/discord-auth", { replace: true });
+      return;
+    }
+
+    // If portal selection is already done, redirect to appropriate portal
+    const selectedRoute = localStorage.getItem("selectedPortalRoute");
+    if (selectedRoute) {
+      navigate(selectedRoute, { replace: true });
     }
   }, [navigate]);
-  const [selectedPortal, setSelectedPortal] = useState<"admin" | "member" | null>(null);
 
   const portals = [
     {
@@ -65,9 +73,9 @@ const PortalSelection = () => {
 
   const handlePortalSelect = (portalId: "admin" | "member") => {
     setSelectedPortal(portalId);
-    localStorage.setItem("portalSelectionDone", "true");
     const portal = portals.find(p => p.id === portalId);
     if (portal) {
+      localStorage.setItem("selectedPortalRoute", portal.route);
       setTimeout(() => {
         navigate(portal.route);
       }, 800);
