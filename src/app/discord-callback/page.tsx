@@ -21,7 +21,9 @@ function DiscordCallbackComponent() {
       return;
     }
 
-    exchangeCodeForToken({ code })
+    const redirectUri = window.location.origin + "/discord-callback";
+
+    exchangeCodeForToken({ code, redirectUri })
       .then(async (result) => {
         const { token, user } = result.data as { token: string; user: { id: string; username: string; avatar: string }};
         
@@ -45,8 +47,14 @@ function DiscordCallbackComponent() {
           // Non-critical error, so we can continue
         }
         
-        // Redirect to portal selection
-        router.replace("/portal-selection");
+        // Signal success to the main window and close the popup
+        if (window.opener) {
+          window.opener.postMessage('authSuccess', window.location.origin);
+          window.close();
+        } else {
+            // Fallback for non-popup scenarios
+            router.replace("/portal-selection");
+        }
       })
       .catch((err) => {
         console.error("Authentication Error:", err);

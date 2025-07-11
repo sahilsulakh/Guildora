@@ -5,17 +5,31 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Crown } from "lucide-react";
 import Link from 'next/link';
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID;
 
 export default function DiscordAuth() {
   const [redirectUri, setRedirectUri] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setRedirectUri(encodeURIComponent(window.location.origin + "/discord-callback"));
+
+      const handleAuthMessage = (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) {
+          return;
+        }
+        if (event.data === 'authSuccess') {
+          router.replace('/portal-selection');
+        }
+      };
+      
+      window.addEventListener('message', handleAuthMessage);
+      return () => window.removeEventListener('message', handleAuthMessage);
     }
-  }, []);
+  }, [router]);
 
   if (!redirectUri) {
     return null; // Or a loading spinner
@@ -24,7 +38,16 @@ export default function DiscordAuth() {
   const DISCORD_OAUTH_URL = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=identify%20email`;
 
   const handleLogin = () => {
-    window.location.href = DISCORD_OAUTH_URL;
+    const width = 600;
+    const height = 800;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    
+    window.open(
+      DISCORD_OAUTH_URL, 
+      'discordAuthPopup', 
+      `width=${width},height=${height},left=${left},top=${top}`
+    );
   };
 
   return (
