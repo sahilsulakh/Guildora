@@ -1,8 +1,10 @@
-
+'use client';
 import { Bell, Search, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 
 interface HeaderProps {
   selectedServer: string;
@@ -51,17 +53,19 @@ export const Header = ({ selectedServer }: HeaderProps) => {
             <span className="text-xs text-white font-bold">3</span>
           </div>
         </Button>
-        <a href="/admin-profile" className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer shadow-lg shadow-purple-500/25 transition-transform hover:scale-105 bg-gradient-to-r from-purple-500 to-pink-500">
+        <Link href="/admin-profile" className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer shadow-lg shadow-purple-500/25 transition-transform hover:scale-105 bg-gradient-to-r from-purple-500 to-pink-500">
           {user && user.avatar ? (
-            <img
+            <Image
               src={`https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`}
               alt={user.username}
+              width={32}
+              height={32}
               className="w-8 h-8 rounded-full object-cover border-2 border-white"
             />
           ) : (
             <span className="text-sm font-bold text-white">A</span>
           )}
-        </a>
+        </Link>
       </div>
     </header>
   )

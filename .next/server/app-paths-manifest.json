@@ -1,0 +1,4 @@
+{
+  "/page": "app/page.js",
+  "/discord-auth/page": "app/discord-auth/page.js"
+}
