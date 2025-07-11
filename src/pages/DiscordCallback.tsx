@@ -1,14 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { db } from "@/lib/firebase";
+import { db, functions } from "@/lib/firebase";
 import { collection, addDoc } from "firebase/firestore";
+import { httpsCallable } from "firebase/functions";
 
-// This is a placeholder. In a real app, you would call your backend to exchange the code for a token.
-async function exchangeCodeForToken(code: string) {
-  // Example: await fetch('/api/auth/discord/callback?code=' + code)
-  // For now, just simulate a successful login
-  return { user: { username: "DiscordUser", id: "123456" }, token: "fake-jwt-token" };
-}
+const exchangeCodeForToken = httpsCallable(functions, 'exchangeDiscordCode');
 
 export default function DiscordCallback() {
   const [error, setError] = useState<string | null>(null);
@@ -19,35 +15,46 @@ export default function DiscordCallback() {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
     if (!code) {
-      setError("No code found in URL.");
+      setError("No code found in URL. Please try authenticating again.");
       setLoading(false);
       return;
     }
-    exchangeCodeForToken(code)
-      .then(async (data) => {
-        // Save token/user info as needed (e.g., localStorage, context)
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
+
+    exchangeCodeForToken({ code })
+      .then(async (result) => {
+        const { token, user } = result.data as { token: string; user: { id: string; username: string; avatar: string }};
+        
+        if (!token || !user) {
+          throw new Error("Invalid response from authentication service.");
+        }
+
+        // Save token/user info
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(user));
+
         // Save user info to Firestore
         try {
           await addDoc(collection(db, "users"), {
-            discordId: data.user.id,
-            username: data.user.username,
+            discordId: user.id,
+            username: user.username,
             loginAt: new Date().toISOString(),
           });
         } catch (e) {
-          // Optionally handle Firestore error
+          console.error("Error writing user to Firestore:", e);
+          // Non-critical error, so we can continue
         }
-        // Always redirect to portal selection after authentication
+        
+        // Redirect to portal selection
         navigate("/portal-selection", { replace: true });
       })
-      .catch(() => {
-        setError("Failed to authenticate with Discord.");
+      .catch((err) => {
+        console.error("Authentication Error:", err);
+        setError("Failed to authenticate with Discord. Please try again.");
         setLoading(false);
       });
   }, [navigate]);
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen">Authenticating with Discord...</div>;
-  if (error) return <div className="flex items-center justify-center min-h-screen text-red-600">{error}</div>;
+  if (loading) return <div className="flex items-center justify-center min-h-screen bg-slate-900 text-white">Authenticating with Discord...</div>;
+  if (error) return <div className="flex items-center justify-center min-h-screen bg-slate-900 text-red-500">{error}</div>;
   return null;
 }
